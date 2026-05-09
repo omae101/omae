@@ -1,6 +1,33 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
+import { desc, or, ilike } from "drizzle-orm";
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get("q")?.trim();
+
+    const rows = await db
+      .select()
+      .from(leads)
+      .where(
+        q
+          ? or(
+              ilike(leads.name, `%${q}%`),
+              ilike(leads.email, `%${q}%`),
+              ilike(leads.company, `%${q}%`)
+            )
+          : undefined
+      )
+      .orderBy(desc(leads.createdAt));
+
+    return NextResponse.json(rows);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "서버 오류가 발생했습니다.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {
