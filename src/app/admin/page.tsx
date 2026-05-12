@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 type Lead = {
   id: number;
@@ -65,6 +66,7 @@ function IconClose() {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -74,6 +76,11 @@ export default function AdminPage() {
   const [detailTarget, setDetailTarget] = useState<Lead | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/admin/login");
+  }
 
   const fetchLeads = useCallback(async (q: string) => {
     setLoading(true);
@@ -139,6 +146,12 @@ export default function AdminPage() {
             <a href="/" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
               ← 상담 신청 폼
             </a>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-slate-400 hover:text-red-500 font-medium transition-colors"
+            >
+              로그아웃
+            </button>
           </div>
         </div>
 
