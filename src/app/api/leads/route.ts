@@ -1,26 +1,33 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { leads } from "@/db/schema";
-import { desc, or, ilike } from "drizzle-orm";
+import { supabase } from "@/lib/supabase";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim();
 
-    const rows = await db
-      .select()
-      .from(leads)
-      .where(
-        q
-          ? or(
-              ilike(leads.name, `%${q}%`),
-              ilike(leads.email, `%${q}%`),
-              ilike(leads.company, `%${q}%`)
-            )
-          : undefined
-      )
-      .orderBy(desc(leads.createdAt));
+    let query = supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (q) {
+      query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,company.ilike.%${q}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const rows = (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      company: r.company,
+      email: r.email,
+      phone: r.phone,
+      inquiryType: r.inquiry_type,
+      message: r.message,
+      createdAt: r.created_at,
+    }));
 
     return NextResponse.json(rows);
   } catch (err: unknown) {
@@ -37,7 +44,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "필수 항목이 누락되었습니다." }, { status: 400 });
     }
 
-    await db.insert(leads).values({ name, company, email, phone, inquiryType, message });
+    const { error } = await supabase.from("leads").insert({
+      name,
+      company: company || null,
+      email,
+      phone,
+      inquiry_type: inquiryType,
+      message: message || null,
+    });
+
+    if (error) throw new Error(error.message);
 
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err: unknown) {

@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { leads } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { supabase } from "@/lib/supabase";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await req.json();
-    const { name, company, email, phone, inquiryType, message } = body;
+    const { name, company, email, phone, inquiryType, message } = await req.json();
 
     if (!name || !email || !phone || !inquiryType) {
       return NextResponse.json({ error: "필수 항목이 누락되었습니다." }, { status: 400 });
     }
 
-    await db
-      .update(leads)
-      .set({ name, company, email, phone, inquiryType, message })
-      .where(eq(leads.id, Number(id)));
+    const { error } = await supabase
+      .from("leads")
+      .update({
+        name,
+        company: company || null,
+        email,
+        phone,
+        inquiry_type: inquiryType,
+        message: message || null,
+      })
+      .eq("id", Number(id));
+
+    if (error) throw new Error(error.message);
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
@@ -28,7 +34,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await db.delete(leads).where(eq(leads.id, Number(id)));
+
+    const { error } = await supabase
+      .from("leads")
+      .delete()
+      .eq("id", Number(id));
+
+    if (error) throw new Error(error.message);
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "서버 오류가 발생했습니다.";
