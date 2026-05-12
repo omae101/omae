@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
+type ErrorMsg = string | null;
 
 const INQUIRY_TYPES = [
   "서비스 도입 문의",
@@ -14,6 +15,7 @@ const INQUIRY_TYPES = [
 
 export default function LeadPage() {
   const [formState, setFormState] = useState<FormState>("idle");
+  const [submitError, setSubmitError] = useState<ErrorMsg>(null);
   const [form, setForm] = useState({
     name: "",
     company: "",
@@ -75,16 +77,24 @@ export default function LeadPage() {
     }
 
     setFormState("submitting");
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (!res.ok) {
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error ?? "제출 중 오류가 발생했습니다. 다시 시도해주세요.");
+        setFormState("error");
+        return;
+      }
+      setFormState("success");
+    } catch {
+      setSubmitError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
       setFormState("error");
-      return;
     }
-    setFormState("success");
   }
 
   if (formState === "success") {
@@ -282,6 +292,13 @@ export default function LeadPage() {
             </label>
             {errors.agree && <p className="mt-1.5 text-xs text-red-500">{errors.agree}</p>}
           </div>
+
+          {/* 에러 메시지 */}
+          {formState === "error" && submitError && (
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+              {submitError}
+            </div>
+          )}
 
           {/* 제출 버튼 */}
           <button
