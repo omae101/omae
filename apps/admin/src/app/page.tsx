@@ -14,6 +14,8 @@ type Lead = {
   createdAt: string;
 };
 
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000";
+
 const MODAL_INPUT_CLASS =
   "w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all";
 
@@ -79,7 +81,7 @@ export default function AdminPage() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    router.push("/login");
   }
 
   const fetchLeads = useCallback(async (q: string) => {
@@ -143,7 +145,7 @@ export default function AdminPage() {
               <IconRefresh />
               새로고침
             </button>
-            <a href="/" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <a href={WEB_URL} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
               ← 상담 신청 폼
             </a>
             <button

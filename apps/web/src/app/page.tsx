@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatPhone, validateLeadForm, type LeadFormErrors, type LeadFormValues } from "@lead-sat/shared";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 type ErrorMsg = string | null;
@@ -16,7 +17,7 @@ const INQUIRY_TYPES = [
 export default function LeadPage() {
   const [formState, setFormState] = useState<FormState>("idle");
   const [submitError, setSubmitError] = useState<ErrorMsg>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<LeadFormValues>({
     name: "",
     company: "",
     email: "",
@@ -25,25 +26,7 @@ export default function LeadPage() {
     message: "",
     agree: false,
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
-
-  function validate() {
-    const next: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.name.trim()) next.name = "이름을 입력해주세요.";
-    if (!form.email.trim()) {
-      next.email = "이메일을 입력해주세요.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      next.email = "올바른 이메일 형식이 아닙니다.";
-    }
-    if (!form.phone.trim()) {
-      next.phone = "전화번호를 입력해주세요.";
-    } else if (!/^[0-9\-+\s()]{7,20}$/.test(form.phone)) {
-      next.phone = "올바른 전화번호 형식이 아닙니다.";
-    }
-    if (!form.inquiryType) next.inquiryType = "문의 유형을 선택해주세요.";
-    if (!form.agree) next.agree = "개인정보 수집·이용에 동의해주세요.";
-    return next;
-  }
+  const [errors, setErrors] = useState<LeadFormErrors>({});
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -57,20 +40,13 @@ export default function LeadPage() {
   }
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-    let formatted = digits;
-    if (digits.length > 7) {
-      formatted = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-    } else if (digits.length > 3) {
-      formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
-    }
-    setForm((prev) => ({ ...prev, phone: formatted }));
+    setForm((prev) => ({ ...prev, phone: formatPhone(e.target.value) }));
     if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const validationErrors = validate();
+    const validationErrors = validateLeadForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@lead-sat/shared/supabase";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
